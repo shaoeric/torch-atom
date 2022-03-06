@@ -1,0 +1,41 @@
+name: "cifar100_classification"
+
+dataset:
+  root: "../dataset"
+  num_classes: 100
+
+augument:
+  crop: True
+  flip: True
+
+model:
+  name: "resnet18"
+  ckpt: ""
+  resume: False
+  strict: True
+
+train:
+  epochs: 200
+  start_epoch: 1
+  batch_size: 128
+  lr: 0.01
+  optimizer: "Adam"  # optimizer params can be configured at src/optimizer/optimizer_config.yml
+  schedule: "multi_step_lr"  # scheduler params can be configured at src/schemes/scheme_comfig.yml
+  criterion:
+    names: ["CrossEntropyLoss"]
+    weights: [1.0]
+  metric:
+    names: ["Accuracy"]
+    key_metric_name: "Accuracy"  # model should be saved if key_metric_name meets best score and strategy is not "none"
+    strategy: "max"  # saving strategy of key_metric_name, choises: ["max", "min", "none"] 
+  val_freq: 1
+
+output:
+  ckpt_root: "./ckpt/"
+  save_dir: "cifar100_resnet18"
+  save_freq: 10
+  log_dir: "./logs/"
+  tensorboard: False
+  log_step_freq: -1  # greater or equal than 0, print log each log_step_freq step 
+  log_epoch_freq: 1
+  

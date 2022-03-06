@@ -1,0 +1,20 @@
+constant_lr:
+  step_size: -1
+  gamma: 1.0
+  last_epoch: -1
+
+multi_step_lr:
+  milestones: [0.25, 0.5, 0.75]
+  gamma: 0.1
+  last_epoch: -1
+
+cosine_annealing_lr:
+  T_max: 10
+  eta_min: 1e-6
+  last_epoch: -1
+
+warmup_cosine_annealing_lr:
+  T_0: 0
+  T_mult: 1
+  eta_min: 1e-6
+  last_epoch: -1

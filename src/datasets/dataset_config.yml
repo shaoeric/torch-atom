@@ -1,0 +1,8 @@
+
+
+CIFAR10:   # name needs to be matched with dataset class name
+  root: "./dataset"
+  trainset_sample_ratio: 1.0  # for few shot learning
+  seed: 1  # random seed for trainset sample
+  download: True
+  
