@@ -4,7 +4,10 @@ __all__ = ['AverageMeter']
 
 class AverageScalarMeter(object):
     """Computes and stores the average and current value"""
-    def __init__(self, name):
+    def __init__(self, *args, **kwargs):
+        if 'name' not in kwargs:
+            raise KeyError("name should be specified")
+        name = kwargs['name']
         self.__sum = 0
         self.__count = 0
         self.name = name
@@ -26,15 +29,18 @@ class AverageScalarMeter(object):
 
 
 class AverageTupleMeter(object):
-    def __init__(self, names:List[str], num_scalar: int) -> None:
+    def __init__(self, num_scalar: int, *args, **kwargs) -> None:
         assert isinstance(num_scalar, int)
+        if 'names' not in kwargs:
+            raise KeyError('names should be specified')
+        names = kwargs['names']
         self.names = names
         self.__num_scalar = num_scalar
-        self.__meter_list = [AverageScalarMeter(self.names[i]) for i in range(self.__num_scalar)]
+        self.__meter_list = [AverageScalarMeter(name=self.names[i]) for i in range(self.__num_scalar)]
         self.__count = 0
     
     def update(self, vals, batchsize=1):
-        assert isinstance(vals, tuple)
+        assert isinstance(vals, tuple), "vals is not tuple"
         assert len(vals) == self.__num_scalar
         for i in range(len(vals)):    
             self.__meter_list[i].update(vals[i], batchsize)
@@ -51,21 +57,21 @@ class AverageTupleMeter(object):
     def __repr__(self) -> str:
         string = ""
         values = self.get_value()
-        for name, values in zip(self.names, values):
-            string += "{}: {} ".format(name, values)
+        for name, value in zip(self.names, values):
+            string += "{}: {} ".format(name, value)
         return string
 
 
 class AverageMeter(object):
-    def __init__(self, type="scalar", num_scalar=1) -> None:
+    def __init__(self, type: str="scalar", num_scalar: int=1, *args, **kwargs) -> None:
         assert type in ('scalar', 'tuple')
         assert isinstance(num_scalar, int)
         self.type = type
         self.num_scalar = num_scalar
         if self.type == 'scalar':
-            self.meter = AverageScalarMeter()
+            self.meter = AverageScalarMeter(*args, **kwargs)
         else:
-            self.meter = AverageTupleMeter(self.num_scalar)
+            self.meter = AverageTupleMeter(self.num_scalar, *args, **kwargs)
     
     def update(self, val, batchsize):
         self.meter.update(val, batchsize)
@@ -77,7 +83,7 @@ class AverageMeter(object):
         return self.meter.get_value_by_name(name)
 
     def __repr__(self) -> str:
-        return self.meter
+        return self.meter.__repr__()
 
 if __name__ == '__main__':
     meter_scalar = AverageMeter(type='scalar')

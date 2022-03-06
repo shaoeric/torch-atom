@@ -1,8 +1,13 @@
 name: "cifar100_classification"
 
-dataset:
-  root: "../dataset"
-  num_classes: 100
+environment:
+  cuda: 
+    flag: True
+    devices: "0"
+  seed: 42
+
+dataset: 
+  name: "CIFAR100"
 
 augument:
   crop: True
@@ -13,6 +18,7 @@ model:
   ckpt: ""
   resume: False
   strict: True
+  num_classes: 100
 
 train:
   epochs: 200
@@ -23,7 +29,7 @@ train:
   schedule: "multi_step_lr"  # scheduler params can be configured at src/schemes/scheme_comfig.yml
   criterion:
     names: ["CrossEntropyLoss"]
-    weights: [1.0]
+    loss_weights: [1.0]
   metric:
     names: ["Accuracy"]
     key_metric_name: "Accuracy"  # model should be saved if key_metric_name meets best score and strategy is not "none"

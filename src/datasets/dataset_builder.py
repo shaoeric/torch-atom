@@ -5,12 +5,12 @@ except:
     path.append('../datasets')
     from cifar import *
 
-from cv2 import mean
-from torch import optim
 import os
+
+from simplejson import load
 import yaml
 from easydict import EasyDict
-import torchvision
+import re
 
 __all__ = [
     "DatasetBuilder"
@@ -21,9 +21,20 @@ DATASET_CONFIG = os.path.join(os.path.dirname(__file__), "dataset_config.yml")
 
 
 def parse_dataset_config():
-        with open(DATASET_CONFIG, 'r') as f:
-            data = yaml.load(f, Loader=yaml.FullLoader)
-        return EasyDict(data)
+    loader = yaml.SafeLoader
+    loader.add_implicit_resolver(
+        u'tag:yaml.org,2002:float',
+        re.compile(u'''^(?:
+        [-+]?(?:[0-9][0-9_]*)\\.[0-9_]*(?:[eE][-+]?[0-9]+)?
+        |[-+]?(?:[0-9][0-9_]*)(?:[eE][-+]?[0-9]+)
+        |\\.[0-9_]+(?:[eE][-+][0-9]+)?
+        |[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\\.[0-9_]*
+        |[-+]?\\.(?:inf|Inf|INF)
+        |\\.(?:nan|NaN|NAN))$''', re.X),
+        list(u'-+0123456789.'))
+    with open(DATASET_CONFIG, 'r') as f:
+        data = yaml.load(f, Loader=loader)
+    return EasyDict(data)
 
 
 class DatasetBuilder:

@@ -1,4 +1,3 @@
-from cProfile import label
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -10,7 +9,10 @@ from .optimizer import OptimizerBuilder
 from .schemes import SchedulerBuilder
 from .utils import LoggerBuilder, AverageMeter
 from .metrics import MetricBuilder
-from controller import Controller
+from .controller import Controller
+
+
+__all__ = ['Trainer']
 
 
 class Trainer:
@@ -49,6 +51,7 @@ class Trainer:
     def __parse_config(self):
         self.max_epoch = self.config.train["epochs"]
         self.lr = self.config.train["lr"]
+        self.loss_names = self.config.train['criterion']['names']
         self.metric_names = self.config.train["metric"]["names"]
         self.key_metric_name = self.config.train["metric"]["key_metric_name"]
 
@@ -56,8 +59,8 @@ class Trainer:
         self.log_epoch_freq = self.config.output["log_epoch_freq"]
 
     def __build_optimizer(self, model: nn.Module, lr: float, *args, **kwargs):
-        optimizer_name = self.config.optimizer["name"]
-        scheduler_name = self.config.schedule["name"]
+        optimizer_name = self.config.train.optimizer
+        scheduler_name = self.config.train.schedule
         
         optimizer, optimizer_config = OptimizerBuilder.load(optimizer_name, model.parameters(), lr)
         scheduler, scheduler_config = SchedulerBuilder.load(scheduler_name, optimizer, self.max_epoch)
@@ -86,9 +89,9 @@ class Trainer:
         if self.summary is not None:
             self.summary.add_scalar("train/lr", current_lr, epoch)
 
-        loss_recorder = AverageMeter(type='scalar')
-        loss_list_recorder = AverageMeter(type='tuple', num_scalar=self.__num_loss)
-        metric_recorder = AverageMeter(type='tuple', num_scalar=self.__num_metric)
+        loss_recorder = AverageMeter(type='scalar', name='total loss')
+        loss_list_recorder = AverageMeter(type='tuple', num_scalar=self.__num_loss, names=self.loss_names)
+        metric_list_recorder = AverageMeter(type='tuple', num_scalar=self.__num_metric, names=self.metric_names)
         
         # === current epoch begins training ===
         for batch_idx, batch in enumerate(dataloader):
@@ -104,15 +107,16 @@ class Trainer:
             loss_recorder.update(loss.item(), batch_size)
             loss_list_recorder.update(loss_tuple, batch_size)
 
-            metrics = [func(output_no_grad, target) for func in self.metric_func_list]
-            metric_recorder.update(metrics, batch_size)
-            
+            metrics = tuple([func(output_no_grad, target) for func in self.metric_func_list])
+            metric_list_recorder.update(metrics, batch_size)
+            print(metric_list_recorder)
+
             if self.log_step_freq > 0 and self.__global_step % self.log_step_freq == 0:
                 if self.logger:
                     loss_list = list(loss_tuple)
                     loss_list = tuple(round(loss_item, 4) for loss_item in loss_list)
                     msg = "[Train] Epoch:[{}/{}] batch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, batch_idx + 1, len(dataloader),
-                    loss_recorder.get_value(), loss_list_recorder.get_value(), metric_recorder)
+                    loss_recorder.get_value(), loss_list_recorder.get_value(), metric_list_recorder)
                     self.logger.info(msg)
 
             self.__global_step += 1
@@ -122,12 +126,12 @@ class Trainer:
             if self.logger:
                 loss_list = list(loss_tuple)
                 loss_list = tuple(round(loss_item, 4) for loss_item in loss_list)
-                msg = "[Train] Epoch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, loss_recorder.get_value(), loss_list_recorder.get_value(), metric_recorder)
+                msg = "[Train] Epoch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, loss_recorder.get_value(), loss_list_recorder.get_value(), metric_list_recorder)
                 self.logger.info(msg)
             if self.summary:
                 self.summary.add_scalar("train/epoch_loss", loss_recorder.get_value(), epoch)
-                names = metric_recorder.meter.names
-                values = metric_recorder.meter.get_value()
+                names = metric_list_recorder.meter.names
+                values = metric_list_recorder.meter.get_value()
                 for name, value in zip(names, values):
                     self.summary.add_scalar("train/epoch_{}".format(name), value, epoch)
     
@@ -151,7 +155,7 @@ class Trainer:
                 
                 loss_recorder.update(loss.item(), batch_size)
                 loss_list_recorder.update(loss_tuple)
-                metrics = [func(output_no_grad, target) for func in self.metric_func_list]
+                metrics = tuple([func(output_no_grad, target) for func in self.metric_func_list])
                 metric_recorder.update(metrics, batch_size)
             
                 if self.log_step_freq > 0 and val_step % self.log_step_freq == 0:

@@ -18,4 +18,5 @@ class ModelBuilder:
 
 
 if __name__ == '__main__':
-    model = ModelBuilder.load("resnet18")
+    model = ModelBuilder.load("resnet34", num_classes=10)
+    print(model)

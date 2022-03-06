@@ -20,7 +20,7 @@ class Controller(object):
         self.optimizer = optimizer
 
 
-    def train_step(self, input: torch.Tensor, label: torch.Tensor, *args, **kwargs) -> List[torch.FloatTensor, List[torch.FloatTensor], torch.FloatTensor]:
+    def train_step(self, input: torch.Tensor, label: torch.Tensor, *args, **kwargs):
         """
         Define the training process for the model, easy for extension for multiple models
 
@@ -41,7 +41,7 @@ class Controller(object):
         return loss, loss_tuple, output_no_grad
 
 
-    def validate_step(self, input: torch.Tensor, label: torch.Tensor, *args, **kwargs) -> List[torch.FloatTensor, List[torch.FloatTensor], torch.FloatTensor]:
+    def validate_step(self, input: torch.Tensor, label: torch.Tensor, *args, **kwargs):
         """
         Define the validation process for the model
 

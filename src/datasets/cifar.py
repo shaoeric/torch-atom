@@ -126,7 +126,11 @@ class CIFAR10(VisionDataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target
+        data = {
+            'image': img,
+            'label': target
+        }
+        return data
 
     def __len__(self):
         return len(self.data)

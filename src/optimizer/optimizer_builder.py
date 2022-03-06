@@ -10,7 +10,7 @@ from easydict import EasyDict
 from typing import Tuple, Iterator
 from torch import optim
 import torch.nn as nn
-
+import re
 
 __all__ = ["OptimizerBuilder"]
 
@@ -19,9 +19,20 @@ OPTIMIZER_CONFIG = os.path.join(os.path.dirname(__file__), "optimizer_config.yml
 
 
 def parse_optimizer_config():
-        with open(OPTIMIZER_CONFIG, 'r') as f:
-            data = yaml.load(f, Loader=yaml.FullLoader)
-        return EasyDict(data)
+    loader = yaml.SafeLoader
+    loader.add_implicit_resolver(
+        u'tag:yaml.org,2002:float',
+        re.compile(u'''^(?:
+        [-+]?(?:[0-9][0-9_]*)\\.[0-9_]*(?:[eE][-+]?[0-9]+)?
+        |[-+]?(?:[0-9][0-9_]*)(?:[eE][-+]?[0-9]+)
+        |\\.[0-9_]+(?:[eE][-+][0-9]+)?
+        |[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\\.[0-9_]*
+        |[-+]?\\.(?:inf|Inf|INF)
+        |\\.(?:nan|NaN|NAN))$''', re.X),
+        list(u'-+0123456789.'))
+    with open(OPTIMIZER_CONFIG, 'r') as f:
+        data = yaml.load(f, Loader=loader)
+    return EasyDict(data)
 
 
 class OptimizerBuilder:
@@ -36,3 +47,8 @@ class OptimizerBuilder:
         return optimizer, {optimizer_name: optimizer_param}
 
 
+if __name__ == '__main__':
+    import torch.nn as nn
+    model = nn.Linear(3, 2)
+    optimizer, param = OptimizerBuilder.load('Adam', model.parameters(), 0.1)
+    print(param)
