@@ -25,7 +25,7 @@ class AverageScalarMeter(object):
         return self.get_value()
 
     def __repr__(self) -> str:
-        return "{}: {}".format(self.name, round(self.get_value()))
+        return "{}: {}".format(self.name, round(self.get_value(), 4))
 
 
 class AverageTupleMeter(object):
@@ -53,12 +53,11 @@ class AverageTupleMeter(object):
         idx = self.names.index(name)
         return self.__meter_list[idx].get_value()
 
-
     def __repr__(self) -> str:
         string = ""
         values = self.get_value()
         for name, value in zip(self.names, values):
-            string += "{}: {} ".format(name, value)
+            string += "{}: {} ".format(name, round(value, 4))
         return string
 
 

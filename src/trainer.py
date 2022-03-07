@@ -95,8 +95,8 @@ class Trainer:
         
         # === current epoch begins training ===
         for batch_idx, batch in enumerate(dataloader):
-            data = batch["image"]
-            target = batch["label"]
+            data = batch["image"].float()
+            target = batch["label"].long()
             batch_size = data.size(0)
             if use_cuda:
                 data = data.cuda()
@@ -109,14 +109,11 @@ class Trainer:
 
             metrics = tuple([func(output_no_grad, target) for func in self.metric_func_list])
             metric_list_recorder.update(metrics, batch_size)
-            print(metric_list_recorder)
 
             if self.log_step_freq > 0 and self.__global_step % self.log_step_freq == 0:
                 if self.logger:
-                    loss_list = list(loss_tuple)
-                    loss_list = tuple(round(loss_item, 4) for loss_item in loss_list)
                     msg = "[Train] Epoch:[{}/{}] batch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, batch_idx + 1, len(dataloader),
-                    loss_recorder.get_value(), loss_list_recorder.get_value(), metric_list_recorder)
+                    loss_recorder.get_value(), loss_list_recorder, metric_list_recorder)
                     self.logger.info(msg)
 
             self.__global_step += 1
@@ -124,9 +121,7 @@ class Trainer:
 
         if epoch % self.log_epoch_freq == 0:
             if self.logger:
-                loss_list = list(loss_tuple)
-                loss_list = tuple(round(loss_item, 4) for loss_item in loss_list)
-                msg = "[Train] Epoch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, loss_recorder.get_value(), loss_list_recorder.get_value(), metric_list_recorder)
+                msg = "[Train] Epoch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, loss_recorder.get_value(), loss_list_recorder, metric_list_recorder)
                 self.logger.info(msg)
             if self.summary:
                 self.summary.add_scalar("train/epoch_loss", loss_recorder.get_value(), epoch)
@@ -137,42 +132,38 @@ class Trainer:
     
     def validate(self, epoch: int, dataloader: DataLoader):
         self.model.eval()
-        loss_recorder = AverageMeter(type="scalar")
-        loss_list_recorder = AverageMeter(type="tuple", num_scalar=self.__num_metric)
-        metric_recorder = AverageMeter(type='tuple', num_scalar=self.__num_metric)
+        loss_recorder = AverageMeter(type="scalar", name='total loss')
+        loss_list_recorder = AverageMeter(type="tuple", num_scalar=self.__num_metric, names=self.loss_names)
+        metric_recorder = AverageMeter(type='tuple', num_scalar=self.__num_metric, names=self.metric_names)
         use_cuda = torch.cuda.is_available()
         val_step = 0
         with torch.no_grad():
             # === current epoch begins validation ===
             for batch_idx, batch in enumerate(dataloader):
-                data = batch["image"]
-                target = batch["label"]
+                data = batch["image"].float()
+                target = batch["label"].long()
                 batch_size = data.size(0)
                 if use_cuda:
                     data = data.cuda()
-                    target = data.cuda()
+                    target = target.cuda()
                 loss, loss_tuple, output_no_grad = self.controller.validate_step(data, target)
                 
                 loss_recorder.update(loss.item(), batch_size)
-                loss_list_recorder.update(loss_tuple)
+                loss_list_recorder.update(loss_tuple, batch_size)
                 metrics = tuple([func(output_no_grad, target) for func in self.metric_func_list])
                 metric_recorder.update(metrics, batch_size)
             
                 if self.log_step_freq > 0 and val_step % self.log_step_freq == 0:
                     if self.logger:
-                        loss_tuple = list(loss_tuple)
-                        loss_tuple = tuple(round(loss_item, 4) for loss_item in loss_tuple)
                         msg = "[Validation] Epoch:[{}/{}] batch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, batch_idx + 1, len(dataloader),
-                        loss_recorder.get_value(), loss_list_recorder.get_value(), metric_recorder)
+                        loss_recorder.get_value(), loss_list_recorder, metric_recorder)
                         self.logger.info(msg)
                 val_step += 1
             # === current epoch finishes validation === 
 
             if epoch % self.log_epoch_freq == 0:
                 if self.logger:
-                    loss_list = list(loss_tuple)
-                    loss_list = tuple(round(loss_item, 4) for loss_item in loss_list)
-                    msg = "[Validation] Epoch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, loss_recorder.get_value(), loss_list_recorder.get_value(), metric_recorder)
+                    msg = "[Validation] Epoch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, loss_recorder.get_value(), loss_list_recorder, metric_recorder)
                     self.logger.info(msg)
                 if self.summary:
                     self.summary.add_scalar("val/epoch_loss", loss_recorder.get_value(), epoch)

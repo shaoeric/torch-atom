@@ -7,7 +7,6 @@ except:
 
 import os
 
-from simplejson import load
 import yaml
 from easydict import EasyDict
 import re

@@ -1,6 +1,6 @@
 SGD:
-  momentum: 0
-  weight_decay: 0
+  momentum: 0.9
+  weight_decay: 5e-4
   dampening: 0
   nesterov: False
 

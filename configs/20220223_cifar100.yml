@@ -14,18 +14,18 @@ augument:
   flip: True
 
 model:
-  name: "resnet18"
+  name: "resnet34"
   ckpt: ""
   resume: False
   strict: True
   num_classes: 100
 
 train:
-  epochs: 200
+  epochs: 240
   start_epoch: 1
-  batch_size: 128
-  lr: 0.01
-  optimizer: "Adam"  # optimizer params can be configured at src/optimizer/optimizer_config.yml
+  batch_size: 64
+  lr: 0.05
+  optimizer: "SGD"  # optimizer params can be configured at src/optimizer/optimizer_config.yml
   schedule: "multi_step_lr"  # scheduler params can be configured at src/schemes/scheme_comfig.yml
   criterion:
     names: ["CrossEntropyLoss"]
@@ -38,10 +38,10 @@ train:
 
 output:
   ckpt_root: "./ckpt/"
-  save_dir: "cifar100_resnet18"
-  save_freq: 10
+  save_dir: "cifar100_resnet34"
+  save_freq: 20
   log_dir: "./logs/"
-  tensorboard: False
+  tensorboard: True
   log_step_freq: -1  # greater or equal than 0, print log each log_step_freq step 
   log_epoch_freq: 1
   

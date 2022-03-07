@@ -4,7 +4,7 @@ constant_lr:
   last_epoch: -1
 
 multi_step_lr:
-  milestones: [0.25, 0.5, 0.75]
+  milestones: [0.625, 0.75, 0.875]
   gamma: 0.1
   last_epoch: -1
 
