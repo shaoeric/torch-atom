@@ -1,7 +1,7 @@
 import torch
 from configs import ConfigLoader
 from datetime import datetime
-from src import DatasetBuilder, ModelBuilder, LossBuilder, LossWrapper, OptimizerBuilder, SchedulerBuilder, MetricBuilder, NetIO, Trainer
+from src import DatasetBuilder, ModelBuilder, LossBuilder, LossWrapper, NetIO, Trainer
 import argparse
 import numpy as np
 import os
@@ -37,16 +37,16 @@ def build_dataloader(config):
         transforms.RandomCrop(32, 4),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+        transforms.Normalize(config.dataset.mean, config.dataset.std)
     ])
     val_transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+        transforms.Normalize(config.dataset.mean, config.dataset.std)
     ])
     trainset, trainset_config = DatasetBuilder.load(dataset_name=config.dataset['name'], transform=train_transform, train=True)
     valset, valset_config = DatasetBuilder.load(dataset_name=config.dataset['name'], transform=val_transform, train=False)
-    train_loader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
-    val_loader = DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=4)
+    train_loader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    val_loader = DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
     return (train_loader, trainset_config), (val_loader, valset_config)
 
 

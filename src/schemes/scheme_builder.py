@@ -45,7 +45,7 @@ class SchedulerBuilder:
         scheduler_func = globals()[scheduler_func_name]
         config = parse_scheduler_config()
         scheduler_params = config[scheduler_func_name]
-        scheduler = scheduler_func(optimizer, max_epoch, scheduler_params)
+        scheduler = scheduler_func(optimizer, max_epoch, **scheduler_params)
         return scheduler, {scheduler_func_name: scheduler_params}
 
 

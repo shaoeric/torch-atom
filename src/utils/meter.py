@@ -37,14 +37,12 @@ class AverageTupleMeter(object):
         self.names = names
         self.__num_scalar = num_scalar
         self.__meter_list = [AverageScalarMeter(name=self.names[i]) for i in range(self.__num_scalar)]
-        self.__count = 0
     
     def update(self, vals, batchsize=1):
         assert isinstance(vals, tuple), "vals is not tuple"
         assert len(vals) == self.__num_scalar
         for i in range(len(vals)):    
             self.__meter_list[i].update(vals[i], batchsize)
-        self.__count += 1
 
     def get_value(self):
         return tuple([meter.get_value() for meter in self.__meter_list])

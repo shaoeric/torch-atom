@@ -83,7 +83,6 @@ class Trainer:
         use_cuda = torch.cuda.is_available()
         self.model.train()
 
-        self.scheduler.step()
         current_lr = self.scheduler.get_lr()[0]
 
         if self.summary is not None:
@@ -129,12 +128,14 @@ class Trainer:
                 values = metric_list_recorder.meter.get_value()
                 for name, value in zip(names, values):
                     self.summary.add_scalar("train/epoch_{}".format(name), value, epoch)
-    
+
+        self.scheduler.step()
+        
     def validate(self, epoch: int, dataloader: DataLoader):
         self.model.eval()
         loss_recorder = AverageMeter(type="scalar", name='total loss')
         loss_list_recorder = AverageMeter(type="tuple", num_scalar=self.__num_metric, names=self.loss_names)
-        metric_recorder = AverageMeter(type='tuple', num_scalar=self.__num_metric, names=self.metric_names)
+        metric_list_recorder = AverageMeter(type='tuple', num_scalar=self.__num_metric, names=self.metric_names)
         use_cuda = torch.cuda.is_available()
         val_step = 0
         with torch.no_grad():
@@ -151,26 +152,26 @@ class Trainer:
                 loss_recorder.update(loss.item(), batch_size)
                 loss_list_recorder.update(loss_tuple, batch_size)
                 metrics = tuple([func(output_no_grad, target) for func in self.metric_func_list])
-                metric_recorder.update(metrics, batch_size)
+                metric_list_recorder.update(metrics, batch_size)
             
                 if self.log_step_freq > 0 and val_step % self.log_step_freq == 0:
                     if self.logger:
                         msg = "[Validation] Epoch:[{}/{}] batch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, batch_idx + 1, len(dataloader),
-                        loss_recorder.get_value(), loss_list_recorder, metric_recorder)
+                        loss_recorder.get_value(), loss_list_recorder, metric_list_recorder)
                         self.logger.info(msg)
                 val_step += 1
             # === current epoch finishes validation === 
 
             if epoch % self.log_epoch_freq == 0:
                 if self.logger:
-                    msg = "[Validation] Epoch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, loss_recorder.get_value(), loss_list_recorder, metric_recorder)
+                    msg = "[Validation] Epoch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, loss_recorder.get_value(), loss_list_recorder, metric_list_recorder)
                     self.logger.info(msg)
                 if self.summary:
                     self.summary.add_scalar("val/epoch_loss", loss_recorder.get_value(), epoch)
-                    names = metric_recorder.meter.names
-                    values = metric_recorder.meter.get_value()
+                    names = metric_list_recorder.meter.names
+                    values = metric_list_recorder.meter.get_value()
                     for name, value in zip(names, values):
                         self.summary.add_scalar("val/epoch_{}".format(name), value, epoch)
             
             # save checkpoint referring to the save_freq and the saving strategy, besides record the key metric value
-            self.ioer.save_file(self.model, epoch, metric_recorder.get_value_by_name(self.key_metric_name))
+            self.ioer.save_file(self.model, epoch, metric_list_recorder.get_value_by_name(self.key_metric_name))

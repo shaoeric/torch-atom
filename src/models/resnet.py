@@ -1,9 +1,5 @@
 """resnet in pytorch
-
-
-
 [1] Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun.
-
     Deep Residual Learning for Image Recognition
     https://arxiv.org/abs/1512.03385v1
 """
@@ -13,7 +9,6 @@ import torch.nn as nn
 
 class BasicBlock(nn.Module):
     """Basic Block for resnet 18 and resnet 34
-
     """
 
     #BasicBlock and BottleNeck block
@@ -50,7 +45,6 @@ class BasicBlock(nn.Module):
 
 class BottleNeck(nn.Module):
     """Residual block for resnet over 50 layers
-
     """
     expansion = 4
     def __init__(self, in_channels, out_channels, stride=1):
@@ -101,13 +95,11 @@ class ResNet(nn.Module):
         """make resnet layers(by layer i didnt mean this 'layer' was the
         same as a neuron netowork layer, ex. conv layer), one layer may
         contain more than one residual block
-
         Args:
             block: block type, basic block or bottle neck block
             out_channels: output depth channel number of this layer
             num_blocks: how many blocks per layer
             stride: the stride of the first block of this layer
-
         Return:
             return a resnet layer
         """
@@ -134,30 +126,27 @@ class ResNet(nn.Module):
 
         return output
 
-def resnet18(num_classes=100):
+def resnet18(num_classes):
     """ return a ResNet 18 object
     """
     return ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
 
-def resnet34(num_classes=100):
+def resnet34(num_classes):
     """ return a ResNet 34 object
     """
     return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes)
 
-def resnet50(num_classes=100):
+def resnet50(num_classes):
     """ return a ResNet 50 object
     """
     return ResNet(BottleNeck, [3, 4, 6, 3], num_classes=num_classes)
 
-def resnet101(num_classes=100):
+def resnet101(num_classes):
     """ return a ResNet 101 object
     """
     return ResNet(BottleNeck, [3, 4, 23, 3], num_classes=num_classes)
 
-def resnet152(num_classes=100):
+def resnet152(num_classes):
     """ return a ResNet 152 object
     """
     return ResNet(BottleNeck, [3, 8, 36, 3], num_classes=num_classes)
-
-
-

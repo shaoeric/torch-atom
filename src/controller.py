@@ -1,4 +1,3 @@
-from operator import mod
 import torch
 import torch.nn as nn
 from torch import optim
@@ -35,7 +34,7 @@ class Controller(object):
         """
         self.optimizer.zero_grad()
         output = self.model(input)
-        loss, loss_tuple, output_no_grad = self.loss_wrapper.forward(output, [label])
+        loss, loss_tuple, output_no_grad = self.loss_wrapper(output, [label])
         loss.backward()
         self.optimizer.step()
         return loss, loss_tuple, output_no_grad
@@ -55,5 +54,5 @@ class Controller(object):
             output_no_grad (torch.FloatTensor): model output without grad
         """
         output = self.model(input)
-        loss, loss_tuple, output_no_grad = self.loss_wrapper.forward(output, [label])
+        loss, loss_tuple, output_no_grad = self.loss_wrapper(output, [label])
         return loss.detach(), loss_tuple, output_no_grad

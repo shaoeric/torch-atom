@@ -8,6 +8,8 @@ environment:
 
 dataset: 
   name: "CIFAR100"
+  mean: [0.5071, 0.4866, 0.4409]
+  std: [0.2675, 0.2565, 0.2761]
 
 augument:
   crop: True
@@ -21,10 +23,10 @@ model:
   num_classes: 100
 
 train:
-  epochs: 240
+  epochs: 200
   start_epoch: 1
-  batch_size: 64
-  lr: 0.05
+  batch_size: 128
+  lr: 0.1
   optimizer: "SGD"  # optimizer params can be configured at src/optimizer/optimizer_config.yml
   schedule: "multi_step_lr"  # scheduler params can be configured at src/schemes/scheme_comfig.yml
   criterion:
@@ -38,7 +40,7 @@ train:
 
 output:
   ckpt_root: "./ckpt/"
-  save_dir: "cifar100_resnet34"
+  save_dir: "cifar100_resnet32"
   save_freq: 20
   log_dir: "./logs/"
   tensorboard: True

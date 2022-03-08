@@ -1,4 +1,3 @@
-from math import gamma
 from torch.optim import lr_scheduler
 
 
@@ -18,7 +17,7 @@ def constant_lr(optimizer, epochs, *args, **kwargs):
 
 
 def multi_step_lr(optimizer, epochs, *args, **kwargs):
-    milestones = kwargs["milestones"] if "milestones" in kwargs else [0.25, 0.5, 0.75]
+    milestones = kwargs["milestones"] if "milestones" in kwargs else [60, 120, 160]
     gamma = kwargs["gamma"] if "gamma" in kwargs else 0.1
     last_epoch = kwargs["last_epoch"] if "last_epoch" in kwargs else -1
     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones, gamma=gamma, last_epoch=last_epoch)

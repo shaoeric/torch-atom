@@ -1,7 +1,6 @@
 from PIL import Image
 import os
 import os.path
-from matplotlib import transforms
 import numpy as np
 import pickle
 from torchvision.datasets.vision import VisionDataset
