@@ -1,10 +1,21 @@
+import torch.nn as nn
+
 try:
     from .resnet import *
+    from .vgg import *
+    from .shufflenet import *
+    from .shufflenetv2 import *
+    from .mobilenetv2 import *
 except:
     from sys import path
     path.append('../models')
     from resnet import *
-import torch.nn as nn
+    from vgg import *
+    from shufflenet import *
+    from shufflenetv2 import *
+    from mobilenetv2 import *
+
+
 
 
 class ModelBuilder:
