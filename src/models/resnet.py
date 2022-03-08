@@ -7,6 +7,11 @@
 import torch
 import torch.nn as nn
 
+
+__all__ = [
+    'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152'
+]
+
 class BasicBlock(nn.Module):
     """Basic Block for resnet 18 and resnet 34
     """
