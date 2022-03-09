@@ -1,4 +1,4 @@
-name: "cifar100_classification"
+name: "cifar10_classification"
 
 environment:
   cuda: 
@@ -7,8 +7,8 @@ environment:
   seed: 42
 
 dataset: 
-  name: "CIFAR100"
-  transform_name: "cifar100_transform"
+  name: "CIFAR10"
+  transform_name: "cifar10_transform"
     
 augument:
   crop: True
@@ -19,7 +19,7 @@ model:
   ckpt: ""
   resume: False
   strict: True
-  num_classes: 100
+  num_classes: 10
 
 train:
   epochs: 200
@@ -39,7 +39,7 @@ train:
 
 output:
   ckpt_root: "./ckpt/"
-  save_dir: "cifar100_resnet32"
+  save_dir: "cifar10_resnet32"
   save_freq: 20
   log_dir: "./logs/"
   tensorboard: True

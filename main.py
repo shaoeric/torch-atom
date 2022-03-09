@@ -1,11 +1,10 @@
 import torch
 from configs import ConfigLoader
 from datetime import datetime
-from src import DatasetBuilder, ModelBuilder, LossBuilder, LossWrapper, NetIO, Trainer
+from src import DatasetBuilder, TransformBuilder, ModelBuilder, LossBuilder, LossWrapper, NetIO, Trainer
 import argparse
 import numpy as np
 import os
-from torchvision.transforms import transforms
 from torch.utils.data import DataLoader
 
 def set_seed(seed):
@@ -14,12 +13,14 @@ def set_seed(seed):
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
+
 def prepare_environment(args):
-    config  = ConfigLoader.load(args.config_path)
+    config  = ConfigLoader.load(args.config_path.replace('\n', '').replace('\r', ''))
     date = datetime.now().strftime("%Y%m%d")
     if args.save_dir is not None:
         config.output["save_dir"] = args.save_dir
     config.output["save_dir"] = "{}_{}".format(date, config.output["save_dir"])
+
     config.model['name'] = args.model
     
     seed = config.environment['seed']
@@ -33,18 +34,11 @@ def prepare_environment(args):
 
 def build_dataloader(config):
     batch_size = config.train['batch_size']
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(32, 4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(config.dataset.mean, config.dataset.std)
-    ])
-    val_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(config.dataset.mean, config.dataset.std)
-    ])
-    trainset, trainset_config = DatasetBuilder.load(dataset_name=config.dataset['name'], transform=train_transform, train=True)
-    valset, valset_config = DatasetBuilder.load(dataset_name=config.dataset['name'], transform=val_transform, train=False)
+    transform_name = config.dataset['transform_name']
+    dataset_name = config.dataset['name']
+    train_transform, val_transform = TransformBuilder.load(transform_name)
+    trainset, trainset_config = DatasetBuilder.load(dataset_name=dataset_name, transform=train_transform, train=True)
+    valset, valset_config = DatasetBuilder.load(dataset_name=dataset_name, transform=val_transform, train=False)
     train_loader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
     val_loader = DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
     return (train_loader, trainset_config), (val_loader, valset_config)

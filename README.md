@@ -39,12 +39,17 @@ python main.py --model resnet18 --save_dir cifar100_resnet18
 ### CIFAR100
 
 
-|  Network  | Accuracy | log&ckpt |
-| :-------: | :------: | :------: |
-| resnet18  |  76.46   |          |
-| resnet34  |  77.23   |          |
-| resnet50  |  76.82   |          |
-| resnet101 |  77.32   |          |
+|   Network    | Accuracy | log&ckpt |
+| :----------: | :------: | :------: |
+|   resnet18   |  76.46   |          |
+|   resnet34   |  77.23   |          |
+|   resnet50   |  76.82   |          |
+|  resnet101   |  77.32   |          |
+|   vgg11_bn   |  70.52   |          |
+|   vgg13_bn   |  73.71   |          |
+| mobilenetV2  |  68.99   |          |
+|  shufflenet  |  71.17   |          |
+| shufflenetV2 |  71.16   |          |
 
 
 
