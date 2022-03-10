@@ -9,10 +9,6 @@ environment:
 dataset: 
   name: "CIFAR10"
   transform_name: "cifar10_transform"
-    
-augument:
-  crop: True
-  flip: True
 
 model:
   name: "resnet34"
