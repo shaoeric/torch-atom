@@ -56,7 +56,7 @@ if __name__ == "__main__":
     epochs = 100
     m = nn.Linear(3, 5)
     optimizer = optim.SGD(m.parameters(), lr=0.001)
-    scheduler = SchedulerBuilder.load("cosine_annealing_lr", optimizer, epochs)
+    scheduler, scheduler_param = SchedulerBuilder.load("cosine_annealing_lr", optimizer, epochs)
     lrs = []
     for i in range(epochs):
         scheduler.step()
