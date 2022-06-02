@@ -1,27 +1,30 @@
-name: "cifar10_classification"
+name: "cifar100_classification_ddp"
 
 environment:
   cuda: 
     flag: True
-
   seed: 42
+  ddp: False
+  local_rank: -1
+  num_gpu: 0
 
 dataset: 
-  name: "CIFAR10"
-  transform_name: "cifar10_transform"
+  name: "CIFAR100"
+  transform_name: "cifar100_transform"
 
 model:
   name: "resnet34"
   ckpt: ""
   resume: False
   strict: True
-  num_classes: 10
+  num_classes: 100
 
 train:
   epochs: 200
   start_epoch: 1
-  batch_size: 128
-  lr: 0.1
+  batch_size: 128  # batch_size for each gpu
+  lr: 0.2  # global lr, if lr=0.1 trained on one node and one gpu, then the lr should be scaled, the scaling factor canbe the number of gpus
+  workers: 20
   optimizer: "SGD"  # optimizer params can be configured at src/optimizer/optimizer_config.yml
   schedule: "multi_step_lr"  # scheduler params can be configured at src/schemes/scheme_comfig.yml
   criterion:
@@ -35,7 +38,7 @@ train:
 
 output:
   ckpt_root: "./ckpt/"
-  save_dir: "cifar10_resnet32"
+  save_dir: "cifar100_resnet32_ddp"
   save_freq: 20
   log_dir: "./logs/"
   tensorboard: True

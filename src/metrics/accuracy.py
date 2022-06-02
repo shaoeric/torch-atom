@@ -39,7 +39,7 @@ class Accuracy:
             assert len(pred.shape) == 2
             assert pred.size(0) == label.size(0)
             res = accuracy(pred, label)[0]
-            return res.item()
+            return res
 
 
 if __name__ == '__main__':

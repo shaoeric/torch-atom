@@ -10,7 +10,7 @@ A basic and simple training framework for pytorch, easy for extension.
 
 ## Dependence
 
-- torch==1.7.0+cu110
+- torch==1.7.0+cu110 (>= 1.6 for data distributed parallel)
 - torchvision==0.8.0
 - easydict==1.9
 - tensorboard==2.7
@@ -23,6 +23,7 @@ A basic and simple training framework for pytorch, easy for extension.
 - Not abstract, easy to learn, develop and debug
 - With a lot of repetitive work reduction, it can be more easily control the training process in development and research
 - Friendly to multi-network interactive training, such as GAN, transfer learning, knowledge distillation, etc.
+- DDP training support.
 
 ## Train
 
@@ -30,7 +31,11 @@ A basic and simple training framework for pytorch, easy for extension.
 python main.py --model resnet18 --save_dir cifar100_resnet18 --config_path ./configs/cifar100.yml
 ```
 
+for ddp training, you can just run the below command in the terminal
 
+```shell
+sh run_ddp.sh
+```
 
 ## Results
 
@@ -216,14 +221,16 @@ code：3iqz
 - After training epoch, validation epoch will be performed in general. Torch-atom's NetIO in `src/utils/netio.py` will save the best state dict according to `key_metric_name` and `strategy` in `configs/xxx.yml`
 - Of course, checkpoint can be saved each `save_freq` epoch, which can be set in `configs/xxx.yml` as well
 
+## Change Log
 
+- 2202.6.2 DDP support for training
 
 ## Todo
 
-- DDP training
-- More experiment results
-- More widely-used datasets and models
-- Some visualization code for analysis
+- [x] DDP training
+- [ ] More experiment results
+- [ ] More widely-used datasets and models
+- [ ] Some visualization code for analysis
   - bad case analysis
   - data augmentation visualization
   - ...

@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 main_ddp.py --config_path configs/20220531_cifar100_ddp.yaml --model resnet34 --save_dir resnet34_cifar100_ddp --seed 42

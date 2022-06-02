@@ -1,14 +1,14 @@
 
 
 CIFAR10:   # name needs to be matched with dataset class name
-  root: E:\python_project\multi-pressure-distillation\datasets
+  root: /4T/lc/BNN_NoBN-main/data/cifar10
   trainset_sample_ratio: 1.0  # for few shot learning
   seed: 1  # random seed for trainset sample
   download: True
   
 
 CIFAR100:   # name needs to be matched with dataset class name
-  root: E:\python_project\multi-pressure-distillation\datasets
+  root: /4T/lc/BNN_NoBN-main/data/cifar100
   trainset_sample_ratio: 1.0  # for few shot learning
   seed: 1  # random seed for trainset sample
   download: True

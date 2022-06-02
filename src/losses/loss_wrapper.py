@@ -33,7 +33,7 @@ class LossWrapper(nn.Module):
         for loss_func, loss_weight, target in zip(self.loss_func_list, self.loss_weight_list, targets):
             loss_item = loss_func(pred, target) * loss_weight
             loss += loss_item
-            loss_list.append(loss_item.detach().item())
+            loss_list.append(loss_item.detach())
 
         return loss, tuple(loss_list), pred.detach()
 

@@ -3,7 +3,6 @@ name: "cifar100_classification"
 environment:
   cuda: 
     flag: True
-    devices: "0"
   seed: 42
 
 dataset: 

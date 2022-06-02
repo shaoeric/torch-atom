@@ -20,5 +20,5 @@ __all__ = [
     'NetIO',
     'AverageMeter',
     'LoggerBuilder',
-    'Trainer'
+    'Trainer',
 ]

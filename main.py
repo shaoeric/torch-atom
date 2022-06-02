@@ -27,7 +27,6 @@ def prepare_environment(args):
     set_seed(seed)
 
     if config.environment.cuda.flag:
-        os.environ['CUDA_VISIBLE_DEVICES'] = config.environment.cuda.devices
         torch.backends.cudnn.benchmark = True
         torch.backends.cudnn.deterministic = True
     return config
@@ -64,7 +63,7 @@ def build_trainer(config):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config_path', type=str, default="./configs/20220223_cifar100.yml")
-    parser.add_argument('--model', type=str, default='resnet18')
+    parser.add_argument('--model', type=str, default='resnet34')
     parser.add_argument('--save_dir', type=str)
     args = parser.parse_args()
 

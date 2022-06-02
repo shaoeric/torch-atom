@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+import torch.distributed as dist
 from typing import List
 from easydict import EasyDict
 from .utils import NetIO
@@ -21,6 +22,7 @@ class Trainer:
         model: nn.Module,
         wrapper: LossWrapper,
         ioer: NetIO,
+        ddp: bool = False,
         *args, **kwargs
     ) -> None:
         
@@ -28,7 +30,8 @@ class Trainer:
         self.loss_wrapper = wrapper
         self.ioer = ioer
         self.logger, self.summary = None, None
-
+        self.ddp = ddp
+    
         self.__parse_config()
         
         self.metric_func_list = self.__get_metrics()
@@ -40,13 +43,14 @@ class Trainer:
         (self.optimizer, self.optimizer_params), (self.scheduler, self.scheduler_params) = self.__build_optimizer(self.model, self.lr)
 
         self.controller = Controller(loss_wrapper=self.loss_wrapper, model=self.model, optimizer=self.optimizer)
-  
-        self.logger, self.summary = LoggerBuilder(config).load()
+        if self.is_main_process():
+            self.logger, self.summary = LoggerBuilder(config).load()
         if self.logger is not None:
             self.logger.info(self.optimizer_params)
             self.logger.info(self.scheduler_params)
         
         self.__global_step = 0
+        print("optimizer: ", self.local_rank, self.optimizer)
 
     def __parse_config(self):
         self.max_epoch = self.config.train["epochs"]
@@ -57,6 +61,9 @@ class Trainer:
 
         self.log_step_freq = self.config.output["log_step_freq"]
         self.log_epoch_freq = self.config.output["log_epoch_freq"]
+        if self.ddp:
+            self.local_rank = self.config.environment["local_rank"]
+            self.num_gpu = self.config.environment["num_gpu"]
 
     def __build_optimizer(self, model: nn.Module, lr: float, *args, **kwargs):
         optimizer_name = self.config.train.optimizer
@@ -64,6 +71,11 @@ class Trainer:
         
         optimizer, optimizer_config = OptimizerBuilder.load(optimizer_name, model.parameters(), lr)
         scheduler, scheduler_config = SchedulerBuilder.load(scheduler_name, optimizer, self.max_epoch)
+
+        if self.ddp:
+            model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[self.local_rank])
+            #model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+
         return (optimizer, optimizer_config), (scheduler, scheduler_config)
 
 
@@ -77,15 +89,16 @@ class Trainer:
 
     
     def train(self, epoch: int, dataloader: DataLoader):
-        if self.logger is not None:
+        if self.logger is not None and self.is_main_process():
             self.logger.info("Training epoch [{} / {}]".format(epoch, self.max_epoch))
 
         use_cuda = torch.cuda.is_available()
         self.model.train()
 
         current_lr = self.scheduler.get_lr()[0]
+        print("lr: ", self.local_rank, current_lr)
 
-        if self.summary is not None:
+        if self.summary is not None and self.is_main_process():
             self.summary.add_scalar("train/lr", current_lr, epoch)
 
         loss_recorder = AverageMeter(type='scalar', name='total loss')
@@ -98,19 +111,25 @@ class Trainer:
             target = batch["label"].long()
             batch_size = data.size(0)
             if use_cuda:
-                data = data.cuda()
-                target = target.cuda()
+                data = data.cuda(self.local_rank if self.ddp else None, non_blocking=True)
+                target = target.cuda(self.local_rank if self.ddp else None, non_blocking=True)
 
             loss, loss_tuple, output_no_grad = self.controller.train_step(data, target)
+            metrics = tuple([func(output_no_grad, target) for func in self.metric_func_list])
+
+            if self.ddp:
+                torch.distributed.barrier()
+
+                loss = self.reduce_mean(loss, self.num_gpu)
+                loss_tuple = tuple([self.reduce_mean(loss_each, self.num_gpu) for loss_each in loss_tuple])
+                metrics = tuple([self.reduce_mean(metric_each, self.num_gpu) for metric_each in metrics])
 
             loss_recorder.update(loss.item(), batch_size)
-            loss_list_recorder.update(loss_tuple, batch_size)
-
-            metrics = tuple([func(output_no_grad, target) for func in self.metric_func_list])
+            loss_list_recorder.update(loss_tuple, batch_size)                
             metric_list_recorder.update(metrics, batch_size)
 
             if self.log_step_freq > 0 and self.__global_step % self.log_step_freq == 0:
-                if self.logger:
+                if self.logger and self.is_main_process():
                     msg = "[Train] Epoch:[{}/{}] batch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, batch_idx + 1, len(dataloader),
                     loss_recorder.get_value(), loss_list_recorder, metric_list_recorder)
                     self.logger.info(msg)
@@ -119,13 +138,13 @@ class Trainer:
         # === current epoch finishes training ===
 
         if epoch % self.log_epoch_freq == 0:
-            if self.logger:
+            if self.logger and self.is_main_process():
                 msg = "[Train] Epoch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, loss_recorder.get_value(), loss_list_recorder, metric_list_recorder)
                 self.logger.info(msg)
-            if self.summary:
+            if self.summary and self.is_main_process():
                 self.summary.add_scalar("train/epoch_loss", loss_recorder.get_value(), epoch)
-                names = metric_list_recorder.meter.names
-                values = metric_list_recorder.meter.get_value()
+                names = metric_list_recorder.get_name()
+                values = metric_list_recorder.get_value()
                 for name, value in zip(names, values):
                     self.summary.add_scalar("train/epoch_{}".format(name), value, epoch)
 
@@ -145,17 +164,22 @@ class Trainer:
                 target = batch["label"].long()
                 batch_size = data.size(0)
                 if use_cuda:
-                    data = data.cuda()
-                    target = target.cuda()
+                    data = data.cuda(self.local_rank if self.ddp else None, non_blocking=True)
+                    target = target.cuda(self.local_rank if self.ddp else None, non_blocking=True)
                 loss, loss_tuple, output_no_grad = self.controller.validate_step(data, target)
                 
+                metrics = tuple([func(output_no_grad, target) for func in self.metric_func_list])
+
+                if self.ddp:
+                    loss = self.reduce_mean(loss, self.num_gpu)
+                    loss_tuple = tuple([self.reduce_mean(loss_each, self.num_gpu) for loss_each in loss_tuple])
+                    metrics = tuple([self.reduce_mean(metric_each, self.num_gpu) for metric_each in metrics])
                 loss_recorder.update(loss.item(), batch_size)
                 loss_list_recorder.update(loss_tuple, batch_size)
-                metrics = tuple([func(output_no_grad, target) for func in self.metric_func_list])
                 metric_list_recorder.update(metrics, batch_size)
             
                 if self.log_step_freq > 0 and val_step % self.log_step_freq == 0:
-                    if self.logger:
+                    if self.logger and self.is_main_process():
                         msg = "[Validation] Epoch:[{}/{}] batch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, batch_idx + 1, len(dataloader),
                         loss_recorder.get_value(), loss_list_recorder, metric_list_recorder)
                         self.logger.info(msg)
@@ -163,15 +187,25 @@ class Trainer:
             # === current epoch finishes validation === 
 
             if epoch % self.log_epoch_freq == 0:
-                if self.logger:
+                if self.logger and self.is_main_process():
                     msg = "[Validation] Epoch:[{}/{}] loss: {:.4f} loss list: {} metric list: {}".format(epoch, self.max_epoch, loss_recorder.get_value(), loss_list_recorder, metric_list_recorder)
                     self.logger.info(msg)
-                if self.summary:
+                if self.summary and self.is_main_process():
                     self.summary.add_scalar("val/epoch_loss", loss_recorder.get_value(), epoch)
-                    names = metric_list_recorder.meter.names
-                    values = metric_list_recorder.meter.get_value()
+                    names = metric_list_recorder.get_name()
+                    values = metric_list_recorder.get_value()
                     for name, value in zip(names, values):
                         self.summary.add_scalar("val/epoch_{}".format(name), value, epoch)
             
             # save checkpoint referring to the save_freq and the saving strategy, besides record the key metric value
-            self.ioer.save_file(self.model, epoch, metric_list_recorder.get_value_by_name(self.key_metric_name))
+            if self.ioer and self.is_main_process():
+                self.ioer.save_file(self.model, epoch, metric_list_recorder.get_value_by_name(self.key_metric_name))
+
+    def is_main_process(self):
+        return (not self.ddp) or (self.local_rank == 0)
+
+    def reduce_mean(self, tensor, nprocs):
+        rt = tensor.clone()
+        dist.all_reduce(rt, op=dist.ReduceOp.SUM)
+        rt /= nprocs
+        return rt
